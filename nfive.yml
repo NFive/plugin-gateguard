@@ -1,0 +1,12 @@
+name: NFive/plugin-gateguard
+version: 1.0.0
+description: Control client server access with a whitelist or blacklist
+author: NFive
+license: LGPL
+server:
+  main:
+  - NFive.GateGuard.Server
+  include:
+  - NFive.GateGuard.Shared
+dependencies:
+  NFive/plugin-sessionmanager: '*'
