@@ -89,8 +89,8 @@ namespace NFive.GateGuard.Server
 			// Whitelist mode and client is in rules
 			// or
 			// Blacklist mode and client is not in rules
-			if (this.Configuration.Mode == Mode.Whitelist && hasRule ||
-				this.Configuration.Mode == Mode.Blacklist && !hasRule)
+			if (this.Configuration.Mode == BlockMode.Whitelist && hasRule ||
+				this.Configuration.Mode == BlockMode.Blacklist && !hasRule)
 			{
 				// Notify other plugins client was allowed
 				await this.Events.RaiseAsync(GateGuardEvents.ClientAllowed, e.Client, e.Session);

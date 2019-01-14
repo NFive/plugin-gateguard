@@ -6,7 +6,7 @@ namespace NFive.GateGuard.Server
 {
 	public class Configuration : ControllerConfiguration
 	{
-		public Mode Mode { get; set; } = Mode.Whitelist;
+		public BlockMode Mode { get; set; } = BlockMode.Whitelist;
 
 		public string Message { get; set; } = "You are not whitelisted";
 
@@ -17,7 +17,7 @@ namespace NFive.GateGuard.Server
 		public DatabaseConfig Database { get; set; } = new DatabaseConfig();
 	}
 
-	public enum Mode
+	public enum BlockMode
 	{
 		Whitelist,
 		Blacklist
