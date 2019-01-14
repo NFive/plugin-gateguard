@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using NFive.GateGuard.Server.Extensions;
 using NFive.GateGuard.Server.Models;
 using NFive.GateGuard.Server.Storage;
 using NFive.GateGuard.Shared;
@@ -11,7 +12,6 @@ using NFive.SessionManager.Server.Events;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using NFive.GateGuard.Server.Extensions;
 using SessionStorageContext = NFive.SessionManager.Server.Storage.StorageContext;
 
 namespace NFive.GateGuard.Server
@@ -113,32 +113,23 @@ namespace NFive.GateGuard.Server
 				// Load rules from config
 				this.rules = new RulesConfig();
 
-				if (!this.Configuration.Database.Enabled)
+				using (var context = new StorageContext())
 				{
-					this.rules.Ips.AddRange(this.Configuration.Rules.Ips);
-					this.rules.Licenses.AddRange(this.Configuration.Rules.Licenses);
-					this.rules.Steam.AddRange(this.Configuration.Rules.Steam);
-				}
-				else
-				{
-					using (var context = new StorageContext())
+					try
 					{
-						try
-						{
-							var now = DateTime.UtcNow;
+						var now = DateTime.UtcNow;
 
-							// Find all rules which are not deleted and haven't expired
-							var dbRules = context.GuardRules.Where(r => !r.Deleted.HasValue && (!r.Expiry.HasValue || r.Expiry.Value > now));
+						// Find all rules which are not deleted and haven't expired
+						var dbRules = context.GuardRules.Where(r => !r.Deleted.HasValue && (!r.Expiry.HasValue || r.Expiry.Value > now));
 
-							// Add database rules
-							this.rules.Ips = this.Configuration.Rules.Ips.Union(dbRules.Where(r => r.IpAddress != null).Select(r => r.IpAddress)).ToList();
-							this.rules.Licenses = this.Configuration.Rules.Licenses.Union(dbRules.Where(r => r.License != null).Select(r => r.License)).ToList();
-							this.rules.Steam = this.Configuration.Rules.Steam.Union(dbRules.Where(r => r.SteamId.HasValue).Select(r => r.SteamId.Value)).ToList();
-						}
-						catch (Exception ex)
-						{
-							this.Logger.Error(ex);
-						}
+						// Add database rules
+						this.rules.Ips = this.Configuration.Rules.Ips.Union(dbRules.Where(r => r.IpAddress != null).Select(r => r.IpAddress)).ToList();
+						this.rules.Licenses = this.Configuration.Rules.Licenses.Union(dbRules.Where(r => r.License != null).Select(r => r.License)).ToList();
+						this.rules.Steam = this.Configuration.Rules.Steam.Union(dbRules.Where(r => r.SteamId.HasValue).Select(r => r.SteamId.Value)).ToList();
+					}
+					catch (Exception ex)
+					{
+						this.Logger.Error(ex);
 					}
 				}
 			}
@@ -193,6 +184,8 @@ namespace NFive.GateGuard.Server
 
 					await context.SaveChangesAsync();
 					transaction.Commit();
+
+					Load();
 				}
 				catch (Exception ex)
 				{

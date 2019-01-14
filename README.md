@@ -39,5 +39,7 @@ rules:
   - 12345678901234567
 
 database:
+  # How often to completely reload blocks from the database
+  # This shouldn't need to be changed
   reload_interval: 00:30:00
 ```

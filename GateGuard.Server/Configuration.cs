@@ -41,8 +41,6 @@ namespace NFive.GateGuard.Server
 
 	public class DatabaseConfig
 	{
-		public bool Enabled { get; set; } = true;
-
 		public TimeSpan ReloadInterval { get; set; } = TimeSpan.FromMinutes(30);
 	}
 }
