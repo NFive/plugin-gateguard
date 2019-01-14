@@ -3,7 +3,6 @@ using NFive.GateGuard.Server.Models;
 using NFive.GateGuard.Server.Storage;
 using NFive.GateGuard.Shared;
 using NFive.SDK.Core.Diagnostics;
-using NFive.SDK.Core.Rpc;
 using NFive.SDK.Server.Controllers;
 using NFive.SDK.Server.Events;
 using NFive.SDK.Server.Rcon;
