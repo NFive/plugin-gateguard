@@ -135,8 +135,6 @@ namespace NFive.GateGuard.Server
 							this.rules.Ips = this.Configuration.Rules.Ips.Union(dbRules.Where(r => r.IpAddress != null).Select(r => r.IpAddress)).ToList();
 							this.rules.Licenses = this.Configuration.Rules.Licenses.Union(dbRules.Where(r => r.License != null).Select(r => r.License)).ToList();
 							this.rules.Steam = this.Configuration.Rules.Steam.Union(dbRules.Where(r => r.SteamId.HasValue).Select(r => r.SteamId.Value)).ToList();
-
-							this.Logger.Debug(new Serializer().Serialize(this.rules));
 						}
 						catch (Exception ex)
 						{
