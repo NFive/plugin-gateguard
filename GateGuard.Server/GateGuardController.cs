@@ -12,23 +12,11 @@ using NFive.SessionManager.Server.Events;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using NFive.GateGuard.Server.Extensions;
 using SessionStorageContext = NFive.SessionManager.Server.Storage.StorageContext;
 
 namespace NFive.GateGuard.Server
 {
-	public static class TimeSpanExtensions
-	{
-		public static string ToFriendly(this TimeSpan timeSpan) => string.Join(", ", new[]
-			{
-				Tuple.Create("day", timeSpan.Days),
-				Tuple.Create("hour", timeSpan.Hours),
-				Tuple.Create("minute", timeSpan.Minutes),
-				Tuple.Create("second", timeSpan.Seconds)
-			}
-			.Where(i => i.Item2 > 0)
-			.Select(p => $"{p.Item2} {p.Item1}{(p.Item2 > 1 ? "s" : string.Empty)}"));
-	}
-
 	[PublicAPI]
 	public class GateGuardController : ConfigurableController<Configuration>
 	{
