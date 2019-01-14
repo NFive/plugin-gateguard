@@ -98,7 +98,7 @@
     <Compile Include="Configuration.cs" />
     <Compile Include="Events\ClientSessionEventArgs.cs" />
     <Compile Include="GateGuard.cs" />
-    <Compile Include="Migrations\201812312101216_Init.cs" />
+    <Compile Include="Migrations\201901142135404_Init.cs" />
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\GuardRule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
