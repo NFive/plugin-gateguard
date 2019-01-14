@@ -6,9 +6,9 @@ namespace NFive.GateGuard.Server
 {
 	public class Configuration : ControllerConfiguration
 	{
-		public BlockMode Mode { get; set; } = BlockMode.Whitelist;
+		public BlockMode Mode { get; set; } = BlockMode.Blacklist;
 
-		public string Message { get; set; } = "You are not whitelisted";
+		public string Message { get; set; } = "You have been blacklisted";
 
 		public SteamConfig Steam { get; set; } = new SteamConfig();
 
@@ -25,7 +25,7 @@ namespace NFive.GateGuard.Server
 
 	public class SteamConfig
 	{
-		public bool Required { get; set; } = true;
+		public bool Required { get; set; } = false;
 
 		public string Message { get; set; } = "You must be running Steam to play on this server";
 	}
