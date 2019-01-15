@@ -46,6 +46,11 @@ namespace NFive.GateGuard.Server
 			});
 		}
 
+
+		/// <summary>
+		/// Reloading base configuration
+		/// </summary>
+		/// <param name="configuration">The configuration to reload</param>
 		public override void Reload(Configuration configuration)
 		{
 			base.Reload(configuration);
@@ -54,6 +59,12 @@ namespace NFive.GateGuard.Server
 			Load();
 		}
 
+
+		/// <summary>
+		/// Checks if connecting client passes access validation
+		/// </summary>
+		/// <param name="sender">The plugin sending the handler</param>
+		/// <param name="e">The connecting client</param>
 		private async void OnSessionCreated(object sender, ClientSessionDeferralsEventArgs e)
 		{
 			// Steam is required and client isn't running it
@@ -74,7 +85,6 @@ namespace NFive.GateGuard.Server
 			var hasRule = this.rules.Licenses.Contains(e.Client.License) || e.Client.SteamId.HasValue && this.rules.Steam.Contains(e.Client.SteamId.Value) || this.rules.Ips.Contains(e.Client.EndPoint);
 
 			// Whitelist mode and client is in rules
-			// or
 			// Blacklist mode and client is not in rules
 			if (this.Configuration.Mode == BlockMode.Whitelist && hasRule ||
 				this.Configuration.Mode == BlockMode.Blacklist && !hasRule)
@@ -105,6 +115,10 @@ namespace NFive.GateGuard.Server
 			this.Logger.Info($"Client {e.Client.Name} [{e.Session.UserId}] session [{e.Session.Id}] dropped");
 		}
 
+
+		/// <summary>
+		/// Loads all access rules
+		/// </summary>
 		private void Load()
 		{
 			// Lock to avoid races
@@ -129,12 +143,21 @@ namespace NFive.GateGuard.Server
 					}
 					catch (Exception ex)
 					{
-						this.Logger.Error(ex);
+						this.Logger.Error(ex, $"Load Rules Exception: {ex.InnerException.Message}");
 					}
 				}
 			}
 		}
 
+
+		/// <summary>
+		/// Creates a new rule and adds it to the database storage.
+		/// </summary>
+		/// <param name="e">The Rpc Event Handler</param>
+		/// <param name="userId">The specified user</param>
+		/// <param name="accessRule">A new GateGuard.Access rule</param>
+		/// <param name="reason">Reason for rule creation</param>
+		/// <param name="expiry">Optional expiration date for rule</param>
 		private async void OnRuleCreate(IRpcEvent e, Guid userId, GateGuard.AccessRule accessRule, string reason, DateTime? expiry)
 		{
 			var rule = new GuardRule
@@ -172,6 +195,12 @@ namespace NFive.GateGuard.Server
 			}
 		}
 
+
+		/// <summary>
+		/// Deletes a rule for a specified user
+		/// </summary>
+		/// <param name="e">The RPC Event handler.</param>
+		/// <param name="userId">The identifier of the user to delete the rule for.</param>
 		private async void OnRuleDelete(IRpcEvent e, Guid userId)
 		{
 			using (var context = new StorageContext())
@@ -189,7 +218,7 @@ namespace NFive.GateGuard.Server
 				}
 				catch (Exception ex)
 				{
-					this.Logger.Error(ex);
+					this.Logger.Error(ex, "Error deleting rule");
 					transaction.Rollback();
 				}
 			}
