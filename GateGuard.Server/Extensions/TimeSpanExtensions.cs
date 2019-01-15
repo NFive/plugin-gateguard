@@ -5,6 +5,10 @@ namespace NFive.GateGuard.Server.Extensions
 {
 	public static class TimeSpanExtensions
 	{
+		/// <summary>
+		/// Convert timespan to more friendly formatting
+		/// </summary>
+		/// <param name="timeSpan">The Timespan to convert</param>
 		public static string ToFriendly(this TimeSpan timeSpan) => string.Join(", ", new[]
 			{
 				Tuple.Create("day", timeSpan.Days),

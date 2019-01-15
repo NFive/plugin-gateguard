@@ -71,6 +71,10 @@ namespace NFive.GateGuard.Server
 			this.Rpc.Event(GateGuardEvents.RuleDelete).Trigger(userId, reason);
 		}
 
+
+		/// <summary>
+		/// Access rule definition
+		/// </summary>
 		public class AccessRule
 		{
 			[CanBeNull]

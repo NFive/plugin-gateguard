@@ -155,7 +155,7 @@ namespace NFive.GateGuard.Server
 		/// </summary>
 		/// <param name="e">The Rpc Event Handler</param>
 		/// <param name="userId">The specified user</param>
-		/// <param name="accessRule">A new GateGuard.Access rule</param>
+		/// <param name="accessRule">The new rule to create</param>
 		/// <param name="reason">Reason for rule creation</param>
 		/// <param name="expiry">Optional expiration date for rule</param>
 		private async void OnRuleCreate(IRpcEvent e, Guid userId, GateGuard.AccessRule accessRule, string reason, DateTime? expiry)
