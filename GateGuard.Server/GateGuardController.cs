@@ -8,11 +8,10 @@ using NFive.SDK.Server.Controllers;
 using NFive.SDK.Server.Events;
 using NFive.SDK.Server.Rcon;
 using NFive.SDK.Server.Rpc;
-using NFive.SessionManager.Server.Events;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using SessionStorageContext = NFive.SessionManager.Server.Storage.StorageContext;
+using NFive.SDK.Server.Wrappers;
 
 namespace NFive.GateGuard.Server
 {
@@ -30,8 +29,8 @@ namespace NFive.GateGuard.Server
 			this.Rpc.Event(GateGuardEvents.RuleCreate).On<Guid, GateGuard.AccessRule, string, DateTime?>(OnRuleCreate);
 			this.Rpc.Event(GateGuardEvents.RuleDelete).On<Guid>(OnRuleDelete);
 
-			// Listen for NFive SessionManager plugin events
-			var sessions = new SessionManager.Server.SessionManager(this.Events, this.Rpc);
+			// Listen for NFive session events
+			var sessions = new SessionManager(this.Events, this.Rpc);
 			sessions.SessionCreated += OnSessionCreated;
 
 			// ReSharper disable once FunctionNeverReturns
@@ -97,7 +96,7 @@ namespace NFive.GateGuard.Server
 			}
 
 			// Gracefully dismiss session with reason for dismissal
-			using (var context = new SessionStorageContext())
+			using (var context = new StorageContext())
 			{
 				var dbSession = context.Sessions.Single(s => s.Id == e.Session.Id);
 				dbSession.DisconnectReason = this.Configuration.Message;

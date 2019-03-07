@@ -8,5 +8,3 @@ server:
   - NFive.GateGuard.Server
   include:
   - NFive.GateGuard.Shared
-dependencies:
-  NFive/plugin-sessionmanager: '*'

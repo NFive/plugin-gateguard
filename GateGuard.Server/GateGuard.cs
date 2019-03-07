@@ -1,8 +1,6 @@
 using JetBrains.Annotations;
-using NFive.GateGuard.Server.Events;
 using NFive.GateGuard.Shared;
 using NFive.SDK.Core.Models.Player;
-using NFive.SDK.Core.Plugins;
 using NFive.SDK.Server.Events;
 using NFive.SDK.Server.Rpc;
 using System;
@@ -45,8 +43,8 @@ namespace NFive.GateGuard.Server
 			this.Events = events;
 			this.Rpc = rpc;
 
-			this.Events.On<Client, Session>(GateGuardEvents.ClientAllowed, (c, d) => this.ClientAllowed?.Invoke(this, new ClientSessionEventArgs(c, d)));
-			this.Events.On<Client, Session>(GateGuardEvents.ClientDropped, (c, d) => this.ClientDropped?.Invoke(this, new ClientSessionEventArgs(c, d)));
+			this.Events.On<IClient, Session>(GateGuardEvents.ClientAllowed, (c, d) => this.ClientAllowed?.Invoke(this, new ClientSessionEventArgs(c, d)));
+			this.Events.On<IClient, Session>(GateGuardEvents.ClientDropped, (c, d) => this.ClientDropped?.Invoke(this, new ClientSessionEventArgs(c, d)));
 		}
 
 		/// <summary>
