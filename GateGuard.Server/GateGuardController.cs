@@ -8,10 +8,12 @@ using NFive.SDK.Server.Controllers;
 using NFive.SDK.Server.Events;
 using NFive.SDK.Server.Rcon;
 using NFive.SDK.Server.Rpc;
+using NFive.SDK.Server.Wrappers;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using NFive.SDK.Server.Wrappers;
+using NFive.SDK.Core.Rpc;
 
 namespace NFive.GateGuard.Server
 {
@@ -27,7 +29,10 @@ namespace NFive.GateGuard.Server
 			this.Logger.Info($"Database update interval: Every {this.Configuration.Database.ReloadInterval.ToFriendly()}");
 
 			this.Rpc.Event(GateGuardEvents.RuleCreate).On<Guid, GateGuard.AccessRule, string, DateTime?>(OnRuleCreate);
-			this.Rpc.Event(GateGuardEvents.RuleDelete).On<Guid>(OnRuleDelete);
+			this.Rpc.Event(GateGuardEvents.RuleDelete).On<Guid, string>(OnRuleDelete);
+
+			this.Events.On<Guid, Guid, GateGuard.AccessRule, string, DateTime?>(GateGuardEvents.RuleCreate, OnRuleCreate);
+			this.Events.On<Guid, Guid, string>(GateGuardEvents.RuleDelete, OnRuleDelete);
 
 			// Listen for NFive session events
 			var sessions = new SessionManager(this.Events, this.Rpc);
@@ -39,6 +44,8 @@ namespace NFive.GateGuard.Server
 				while (true)
 				{
 					Load();
+
+					this.Logger.Debug($"Reloading ruleset: { new Serializer().Serialize(this.rules) }");
 
 					await Task.Delay(this.Configuration.Database.ReloadInterval);
 				}
@@ -105,13 +112,72 @@ namespace NFive.GateGuard.Server
 				await context.SaveChangesAsync();
 			}
 
+			var message = this.Configuration.Message;
+
+			if (this.Configuration.Mode == BlockMode.Blacklist)
+			{
+				var remaining = GetGuardRuleExpiryText(e.Client);
+				message = message + " " + remaining;
+			}
+
 			// Drop the client
-			e.Deferrals.Done(this.Configuration.Message);
+			e.Deferrals.Done(message);
 
 			// Notify other plugins client was dropped
 			await this.Events.RaiseAsync(GateGuardEvents.ClientDropped, e.Client, e.Session);
 
 			this.Logger.Info($"Client {e.Client.Name} [{e.Session.UserId}] session [{e.Session.Id}] dropped");
+		}
+
+
+
+		/// <summary>
+		/// Returns the guard rule expiry text.
+		/// </summary>
+		/// <param name="client">The client.</param>
+		/// <returns>
+		/// A string of text.
+		/// </returns>
+		private string GetGuardRuleExpiryText(IClient client)
+		{
+			var text = string.Empty;
+			var now = DateTime.UtcNow;
+			List<GuardRule> dbRules;
+
+			using (var context = new StorageContext())
+			{
+				dbRules = context.GuardRules
+					.Where(r =>
+						!r.Deleted.HasValue
+						&& (!r.Expiry.HasValue || r.Expiry.Value > now)
+						&& (r.License == client.License || r.SteamId == client.SteamId ||
+						    r.IpAddress == client.EndPoint)
+					)
+					.OrderBy(r => r.Expiry)
+					.ToList();
+			}
+
+			if (dbRules.Count > 0)
+			{
+				var rule = dbRules.Last();
+
+				if (rule.Expiry.HasValue)
+				{
+					text = "for the next " + rule.Expiry.Value.Subtract(DateTime.UtcNow).ToFriendly();
+				}
+
+				if (!rule.Expiry.HasValue)
+				{
+					text = "permanently";
+				}
+
+			}
+			else
+			{
+				text = string.Empty;
+			}
+
+			return text;
 		}
 
 
@@ -150,19 +216,33 @@ namespace NFive.GateGuard.Server
 
 
 		/// <summary>
-		/// Creates a new rule and adds it to the database storage.
+		/// Created an overload for creating a new rule and adding it to the database
 		/// </summary>
 		/// <param name="e">The Rpc Event Handler</param>
 		/// <param name="userId">The specified user</param>
 		/// <param name="accessRule">The new rule to create</param>
 		/// <param name="reason">Reason for rule creation</param>
 		/// <param name="expiry">Optional expiration date for rule</param>
-		private async void OnRuleCreate(IRpcEvent e, Guid userId, GateGuard.AccessRule accessRule, string reason, DateTime? expiry)
+		private void OnRuleCreate(IRpcEvent e, Guid userId, GateGuard.AccessRule accessRule, string reason, DateTime? expiry)
+		{
+			this.OnRuleCreate(e.User.Id, userId, accessRule, reason, expiry);
+		}
+
+
+		/// <summary>
+		/// Creates a new rule and adds it to the database storage.
+		/// </summary>
+		/// <param name="staffUserId">The identifier of the staff user who creates the rule.</param>
+		/// <param name="userId">The specified user</param>
+		/// <param name="accessRule">The new rule to create</param>
+		/// <param name="reason">Reason for rule creation</param>
+		/// <param name="expiry">Optional expiration date for rule</param>
+		private async void OnRuleCreate(Guid staffUserId, Guid userId, GateGuard.AccessRule accessRule, string reason, DateTime? expiry)
 		{
 			var rule = new GuardRule
 			{
 				PlayerUserId = userId,
-				StaffUserId = e.User.Id,
+				StaffUserId = staffUserId,
 				Reason = reason
 			};
 
@@ -179,17 +259,12 @@ namespace NFive.GateGuard.Server
 					await context.SaveChangesAsync();
 					transaction.Commit();
 
-					if (!string.IsNullOrEmpty(rule.License)) this.rules.Licenses.Add(rule.License);
-					if (rule.SteamId.HasValue) this.rules.Steam.Add(rule.SteamId.Value);
-					if (!string.IsNullOrEmpty(rule.IpAddress)) this.rules.Ips.Add(rule.IpAddress);
-
-					this.Logger.Info($"Added new rule [{rule.Id}] for user {rule.PlayerUser.Name} [{rule.PlayerUser.Id}] by {rule.StaffUser.Name} for reason: {rule.Reason}");
+					Load();
 				}
 				catch (Exception ex)
 				{
-					transaction.Rollback();
-
 					this.Logger.Error(ex, "Error creating rule");
+					transaction.Rollback();
 				}
 			}
 		}
@@ -200,7 +275,20 @@ namespace NFive.GateGuard.Server
 		/// </summary>
 		/// <param name="e">The RPC Event handler.</param>
 		/// <param name="userId">The identifier of the user to delete the rule for.</param>
-		private async void OnRuleDelete(IRpcEvent e, Guid userId)
+		/// <param name="reason">Optional reason.</param>
+		private void OnRuleDelete(IRpcEvent e, Guid userId, string reason)
+		{
+			this.OnRuleDelete(e.User.Id, userId, reason);
+		}
+
+
+		/// <summary>
+		/// Deletes a rule for a specified user
+		/// </summary>
+		/// <param name="staffUserId">The identifier of the staff user who deletes the rule.</param>
+		/// <param name="userId">The identifier of the user to delete the rule for.</param>
+		/// <param name="reason">Optional reason for deletion.</param>
+		private async void OnRuleDelete(Guid staffUserId, Guid userId, string reason = null)
 		{
 			using (var context = new StorageContext())
 			using (var transaction = context.Database.BeginTransaction())

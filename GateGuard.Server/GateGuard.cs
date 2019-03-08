@@ -50,23 +50,25 @@ namespace NFive.GateGuard.Server
 		/// <summary>
 		/// Creates a new rule and adds it to the database storage.
 		/// </summary>
+		/// <param name="staffUserId">The identifier of the user who creates the rule.</param>
 		/// <param name="userId">The identifier of the user to create the rule for.</param>
 		/// <param name="rule">The rule to add.</param>
 		/// <param name="reason">The reason for the rule.</param>
 		/// <param name="expiry">Optional expiry date for the rule.</param>
-		public void CreateRule(Guid userId, AccessRule rule, string reason, DateTime? expiry = default(DateTime?))
+		public void CreateRule(Guid staffUserId, Guid userId, AccessRule rule, string reason, DateTime? expiry = default(DateTime?))
 		{
-			this.Rpc.Event(GateGuardEvents.RuleCreate).Trigger(userId, rule, reason, expiry);
+			this.Events.Raise(GateGuardEvents.RuleCreate, staffUserId, userId, rule, reason, expiry);
 		}
 
 		/// <summary>
 		/// Deletes a rule for a specified user.
 		/// </summary>
-		/// <param name="userId">The identifier of the user to create rule for.</param>
+		/// <param name="staffUserId">The identifier of the user who deletes the rule.</param>
+		/// <param name="userId">The identifier of the user to delete rule for.</param>
 		/// <param name="reason">The reason for the rule.</param>
-		public void DeleteRule(Guid userId, string reason = null)
+		public void DeleteRule(Guid staffUserId, Guid userId, string reason = null)
 		{
-			this.Rpc.Event(GateGuardEvents.RuleDelete).Trigger(userId, reason);
+			this.Events.Raise(GateGuardEvents.RuleDelete, staffUserId, userId, reason);
 		}
 
 
