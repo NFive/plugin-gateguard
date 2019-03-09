@@ -4,6 +4,7 @@ using NFive.GateGuard.Server.Models;
 using NFive.GateGuard.Server.Storage;
 using NFive.GateGuard.Shared;
 using NFive.SDK.Core.Diagnostics;
+using NFive.SDK.Core.Rpc;
 using NFive.SDK.Server.Controllers;
 using NFive.SDK.Server.Events;
 using NFive.SDK.Server.Rcon;
@@ -13,7 +14,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using NFive.SDK.Core.Rpc;
 
 namespace NFive.GateGuard.Server
 {
@@ -136,11 +136,11 @@ namespace NFive.GateGuard.Server
 		/// </summary>
 		/// <param name="client">The client.</param>
 		/// <returns>
-		/// A string of text.
+		/// The expiry text.
 		/// </returns>
 		private string GetGuardRuleExpiryText(IClient client)
 		{
-			var text = string.Empty;
+			var expiryText = string.Empty;
 			var now = DateTime.UtcNow;
 			List<GuardRule> dbRules;
 
@@ -157,27 +157,19 @@ namespace NFive.GateGuard.Server
 					.ToList();
 			}
 
-			if (dbRules.Count > 0)
+			var rule = dbRules.First();
+
+			if (rule.Expiry.HasValue)
 			{
-				var rule = dbRules.Last();
-
-				if (rule.Expiry.HasValue)
-				{
-					text = "for the next " + rule.Expiry.Value.Subtract(DateTime.UtcNow).ToFriendly();
-				}
-
-				if (!rule.Expiry.HasValue)
-				{
-					text = "permanently";
-				}
-
-			}
-			else
-			{
-				text = string.Empty;
+				expiryText = "for the next " + rule.Expiry.Value.Subtract(DateTime.UtcNow).ToFriendly();
 			}
 
-			return text;
+			if (!rule.Expiry.HasValue)
+			{
+				expiryText = "permanently";
+			}
+
+			return expiryText;
 		}
 
 
